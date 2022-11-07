@@ -1,7 +1,21 @@
 import fs from "node:fs/promises";
-import got, { GotOptions } from "got";
+import got from "got";
 import semver from "semver";
-import { Counter, BotOptions, BotState, MWVersion } from "./types.js";
+import {
+  Counter,
+  BotOptions,
+  BotState,
+  MWVersion,
+  RequestOptions,
+} from "./types.js";
+import { CookieJar } from "tough-cookie";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url)),
+  packageJson = JSON.parse(
+    await fs.readFile(join(__dirname, "../package.json"), "utf8")
+  );
 
 export default class MWBot {
   state: BotState;
@@ -10,11 +24,12 @@ export default class MWBot {
   createAccountToken: string;
   mwVersion: MWVersion;
   counter: Counter;
-  defaultOptions: BotOptions;
   customOptions: BotOptions;
   options: BotOptions;
+  customRequestOptions: RequestOptions;
+  requestOptions: RequestOptions;
 
-  constructor(options: BotOptions, requestOptions: GotOptions<string>) {
+  constructor(options: BotOptions, requestOptions: RequestOptions) {
     this.state = {};
     this.loggedIn = false;
     this.editToken = null;
@@ -39,9 +54,25 @@ export default class MWBot {
       },
       this.customOptions
     );
+    this.customRequestOptions = requestOptions ?? {};
+    this.requestOptions = MWBot.merge<RequestOptions>(
+      {
+        method: "POST",
+        headers: {
+          "User-Agent": `mwbot/${packageJson.version}`,
+        },
+        responseType: "json",
+        form: {},
+        timeout: {
+          request: 120000,
+        },
+        cookieJar: new CookieJar(),
+      },
+      this.customRequestOptions
+    );
   }
 
-  static merge(a: Object, b: Object): Object {
+  static merge<E>(a: E, b: E): E {
     return {
       ...a,
       ...b,

@@ -1,3 +1,5 @@
+import { OptionsInit } from "got";
+
 export interface BotOptions {}
 export interface BotState {}
 export interface MWVersion {}
@@ -7,3 +9,4 @@ export interface Counter {
   fulfilled: number;
   rejected: number;
 }
+export type RequestOptions = OptionsInit;
