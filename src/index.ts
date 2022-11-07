@@ -224,6 +224,18 @@ export default class MWBot {
     }
   }
 
+  async loginGetEditToken(loginOptions: BotOptions) {
+    await this.login(loginOptions);
+    await this.refreshEditToken();
+    return this.getEditToken();
+  }
+
+  async loginGetCreateAccountToken(loginOptions: BotOptions) {
+    await this.login(loginOptions);
+    await this.refreshCreateAccountToken();
+    return this.getCreateAccountToken();
+  }
+
   async rawRequestJSON<E = Object>(requestOptions: RequestOptions): Promise<E> {
     this.counter.total++;
     this.counter.resolved++;
