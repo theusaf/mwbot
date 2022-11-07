@@ -91,13 +91,6 @@ export default class MWBot {
     this.options.apiUrl = apiUrl;
   }
 
-  prepareRequest(params: Object, customRequestOptions: RequestOptions) {
-    if (!this.requestOptions.url) this.requestOptions.url = this.options.apiUrl;
-    let requestOptions = MWBot.merge(this.requestOptions, customRequestOptions);
-    requestOptions.form = MWBot.merge(requestOptions.form, params);
-    return requestOptions;
-  }
-
   async getSiteInfo() {
     const response = await this.request<MWQueryResponse>({
       action: "query",
@@ -234,6 +227,13 @@ export default class MWBot {
   requestText(params: Object, customRequestOptions: RequestOptions = {}) {
     const requestOptions = this.prepareRequest(params, customRequestOptions);
     return this.rawRequestText(requestOptions);
+  }
+
+  prepareRequest(params: Object, customRequestOptions: RequestOptions) {
+    if (!this.requestOptions.url) this.requestOptions.url = this.options.apiUrl;
+    let requestOptions = MWBot.merge(this.requestOptions, customRequestOptions);
+    requestOptions.form = MWBot.merge(requestOptions.form, params);
+    return requestOptions;
   }
 
   async rawRequestJSON<E = Object>(requestOptions: RequestOptions): Promise<E> {
