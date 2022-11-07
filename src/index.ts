@@ -98,57 +98,6 @@ export default class MWBot {
     return requestOptions;
   }
 
-  login(options: BotOptions): Promise<BotState> {
-    this.options = MWBot.merge(this.options, options);
-    const { username, password, apiUrl } = this.options;
-    if (!username || !password || !apiUrl) {
-      throw new Error("Missing login credentials.");
-    }
-    const loginForm: MWLoginForm = {
-      action: "login",
-      lgname: username,
-      lgpassword: password,
-    };
-
-    const loginString = `${username}@${apiUrl.split("/api.php").join("")}`;
-
-    return this.request<MWLoginResponse>(loginForm)
-      .then((loginResponse) => {
-        if (!loginResponse.login?.result) {
-          this.log(`Login failed with invalid response: ${loginString}`);
-          throw new Error("Invalid response from API.");
-        } else {
-          this.state = MWBot.merge(this.state, loginResponse.login);
-          loginForm.lgtoken = loginResponse.login.token;
-          return this.request<MWLoginResponse>(loginForm);
-        }
-      })
-      .then((tokenResponse) => {
-        if (tokenResponse.login?.result === "Success") {
-          this.state = MWBot.merge(this.state, tokenResponse.login);
-          this.loggedIn = true;
-        } else {
-          this.log(`Login failed: ${loginString}`);
-          throw new Error(
-            `Could not login: ${
-              tokenResponse.login?.result ?? "Unknown reason"
-            }`
-          );
-        }
-      })
-      .then(() => this.getSiteInfo())
-      .then(() => {
-        this.mwVersion = semver.coerce(this.state.generator);
-        if (!semver.valid(this.mwVersion)) {
-          throw new Error(
-            `Invalid MediaWiki version: ${JSON.stringify(this.mwVersion)}`
-          );
-        } else {
-          return this.state;
-        }
-      });
-  }
-
   async getSiteInfo() {
     const response = await this.request<MWQueryResponse>({
       action: "query",
@@ -208,6 +157,57 @@ export default class MWBot {
       err.response = response;
       throw err;
     }
+  }
+
+  login(options: BotOptions): Promise<BotState> {
+    this.options = MWBot.merge(this.options, options);
+    const { username, password, apiUrl } = this.options;
+    if (!username || !password || !apiUrl) {
+      throw new Error("Missing login credentials.");
+    }
+    const loginForm: MWLoginForm = {
+      action: "login",
+      lgname: username,
+      lgpassword: password,
+    };
+
+    const loginString = `${username}@${apiUrl.split("/api.php").join("")}`;
+
+    return this.request<MWLoginResponse>(loginForm)
+      .then((loginResponse) => {
+        if (!loginResponse.login?.result) {
+          this.log(`Login failed with invalid response: ${loginString}`);
+          throw new Error("Invalid response from API.");
+        } else {
+          this.state = MWBot.merge(this.state, loginResponse.login);
+          loginForm.lgtoken = loginResponse.login.token;
+          return this.request<MWLoginResponse>(loginForm);
+        }
+      })
+      .then((tokenResponse) => {
+        if (tokenResponse.login?.result === "Success") {
+          this.state = MWBot.merge(this.state, tokenResponse.login);
+          this.loggedIn = true;
+        } else {
+          this.log(`Login failed: ${loginString}`);
+          throw new Error(
+            `Could not login: ${
+              tokenResponse.login?.result ?? "Unknown reason"
+            }`
+          );
+        }
+      })
+      .then(() => this.getSiteInfo())
+      .then(() => {
+        this.mwVersion = semver.coerce(this.state.generator);
+        if (!semver.valid(this.mwVersion)) {
+          throw new Error(
+            `Invalid MediaWiki version: ${JSON.stringify(this.mwVersion)}`
+          );
+        } else {
+          return this.state;
+        }
+      });
   }
 
   async loginGetEditToken(loginOptions: BotOptions) {
