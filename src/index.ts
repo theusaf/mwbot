@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import got from "got";
-import semver from "semver";
+import semver, { SemVer } from "semver";
 import {
   Counter,
   BotOptions,
@@ -10,6 +10,8 @@ import {
   GotRequest,
   MWLoginResponse,
   MWLoginForm,
+  MWQueryResponse,
+  BotError,
 } from "./types.js";
 import { CookieJar } from "tough-cookie";
 import { dirname, join } from "node:path";
@@ -35,7 +37,7 @@ export default class MWBot {
     this.loggedIn = false;
     this.editToken = null;
     this.createAccountToken = null;
-    this.mwVersion = {};
+    this.mwVersion = semver.coerce("0.0.0");
     this.counter = {
       total: 0,
       resolved: 0,
@@ -110,7 +112,7 @@ export default class MWBot {
     return requestOptions;
   }
 
-  async login(options: BotOptions): Promise<void> {
+  login(options: BotOptions): Promise<BotState> {
     this.options = MWBot.merge(this.options, options);
     const { username, password, apiUrl } = this.options;
     if (!username || !password || !apiUrl) {
@@ -122,18 +124,103 @@ export default class MWBot {
       lgpassword: password,
     };
 
-    const loginResponse = await this.request<MWLoginResponse>(loginForm);
-    if (!loginResponse.login?.result) {
-      this.log(
-        `Login failed with invalid response: ${username}@${apiUrl
-          .split("/api.php")
-          .join("")}`
-      );
-      throw new Error("Invalid response from API.");
+    const loginString = `${username}@${apiUrl.split("/api.php").join("")}`;
+
+    return this.request<MWLoginResponse>(loginForm)
+      .then((loginResponse) => {
+        if (!loginResponse.login?.result) {
+          this.log(`Login failed with invalid response: ${loginString}`);
+          throw new Error("Invalid response from API.");
+        } else {
+          this.state = MWBot.merge(this.state, loginResponse.login);
+          loginForm.lgtoken = loginResponse.login.token;
+          return this.request<MWLoginResponse>(loginForm);
+        }
+      })
+      .then((tokenResponse) => {
+        if (tokenResponse.login?.result === "Success") {
+          this.state = MWBot.merge(this.state, tokenResponse.login);
+          this.loggedIn = true;
+        } else {
+          this.log(`Login failed: ${loginString}`);
+          throw new Error(
+            `Could not login: ${
+              tokenResponse.login?.result ?? "Unknown reason"
+            }`
+          );
+        }
+      })
+      .then(() => this.getSiteInfo())
+      .then(() => {
+        this.mwVersion = semver.coerce(this.state.generator);
+        if (!semver.valid(this.mwVersion)) {
+          throw new Error(
+            `Invalid MediaWiki version: ${JSON.stringify(this.mwVersion)}`
+          );
+        } else {
+          return this.state;
+        }
+      });
+  }
+
+  async getSiteInfo() {
+    const response = await this.request<MWQueryResponse>({
+      action: "query",
+      meta: "siteinfo",
+      siprop: "general",
+    });
+    if (response.query?.general) {
+      return this.state;
     } else {
-      this.state = MWBot.merge(this.state, loginResponse.login);
-      loginForm.lgtoken = loginResponse.login.token;
-      return this.request(loginForm);
+      throw new Error("Could not get siteinfo");
+    }
+  }
+
+  async getEditToken() {
+    if (this.editToken) return this.editToken;
+    await this.refreshEditToken();
+    return this.editToken;
+  }
+
+  async refreshEditToken() {
+    const response = await this.request<MWQueryResponse>({
+      action: "query",
+      meta: "tokens",
+      type: "csrf",
+    });
+    if (response.query?.tokens?.csrftoken) {
+      this.editToken = response.query.tokens.csrftoken;
+      this.state = MWBot.merge(this.state, response.query.tokens);
+      return this.state;
+    } else {
+      this.log("Could not get edit token");
+      const err: BotError = new Error("Could not get edit token");
+      err.response = response;
+      throw err;
+    }
+  }
+
+  async getCreateAccountToken() {
+    if (this.createAccountToken) return this.createAccountToken;
+    await this.refreshCreateAccountToken();
+    return this.createAccountToken;
+  }
+
+  async refreshCreateAccountToken() {
+    const response = await this.request<MWQueryResponse>({
+      action: "query",
+      meta: "tokens",
+      type: "createaccount",
+    });
+    if (response.query?.tokens?.createaccount) {
+      this.editToken = response.query.tokens.createaccount;
+      this.state = MWBot.merge(this.state, response.query.tokens);
+      return this.state;
+    } else {
+      this.log("Could not get account creation token");
+      const err: BotError = new Error("Could not get account creation token");
+      err.response = response;
+      throw err;
     }
   }
 
