@@ -91,20 +91,6 @@ export default class MWBot {
     this.options.apiUrl = apiUrl;
   }
 
-  request<E>(params: Object, customRequestOptions: RequestOptions = {}) {
-    return this.requestJSON<E>(params, customRequestOptions);
-  }
-
-  requestJSON<E>(params: Object, customRequestOptions: RequestOptions = {}) {
-    const requestOptions = this.prepareRequest(params, customRequestOptions);
-    return this.rawRequestJSON<E>(requestOptions);
-  }
-
-  requestText(params: Object, customRequestOptions: RequestOptions = {}) {
-    const requestOptions = this.prepareRequest(params, customRequestOptions);
-    return this.rawRequestText(requestOptions);
-  }
-
   prepareRequest(params: Object, customRequestOptions: RequestOptions) {
     if (!this.requestOptions.url) this.requestOptions.url = this.options.apiUrl;
     let requestOptions = MWBot.merge(this.requestOptions, customRequestOptions);
@@ -234,6 +220,20 @@ export default class MWBot {
     await this.login(loginOptions);
     await this.refreshCreateAccountToken();
     return this.getCreateAccountToken();
+  }
+
+  request<E>(params: Object, customRequestOptions: RequestOptions = {}) {
+    return this.requestJSON<E>(params, customRequestOptions);
+  }
+
+  requestJSON<E>(params: Object, customRequestOptions: RequestOptions = {}) {
+    const requestOptions = this.prepareRequest(params, customRequestOptions);
+    return this.rawRequestJSON<E>(requestOptions);
+  }
+
+  requestText(params: Object, customRequestOptions: RequestOptions = {}) {
+    const requestOptions = this.prepareRequest(params, customRequestOptions);
+    return this.rawRequestText(requestOptions);
   }
 
   async rawRequestJSON<E = Object>(requestOptions: RequestOptions): Promise<E> {
