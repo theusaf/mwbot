@@ -76,7 +76,7 @@ export default class MWBot {
    * @param options
    */
   setOptions(options: BotOptions): void {
-    this.options = MWBot.merge(this.options, options);
+    this.options = merge(this.options, options);
   }
 
   /**
@@ -86,7 +86,7 @@ export default class MWBot {
    */
   setRequestOptions(requestOptions: RequestOptions): void {
     delete requestOptions.resolveBodyOnly;
-    this.requestOptions = MWBot.merge(this.requestOptions, requestOptions);
+    this.requestOptions = merge(this.requestOptions, requestOptions);
   }
 
   setApiUrl(apiUrl: string): void {
@@ -120,7 +120,7 @@ export default class MWBot {
     });
     if (response.query?.tokens?.csrftoken) {
       this.editToken = response.query.tokens.csrftoken;
-      this.state = MWBot.merge(this.state, response.query.tokens);
+      this.state = merge(this.state, response.query.tokens);
       return this.state;
     } else {
       this.log("Could not get edit token");
@@ -144,7 +144,7 @@ export default class MWBot {
     });
     if (response.query?.tokens?.createaccount) {
       this.editToken = response.query.tokens.createaccount;
-      this.state = MWBot.merge(this.state, response.query.tokens);
+      this.state = merge(this.state, response.query.tokens);
       return this.state;
     } else {
       this.log("Could not get account creation token");
@@ -155,7 +155,7 @@ export default class MWBot {
   }
 
   login(options: BotOptions): Promise<BotState> {
-    this.options = MWBot.merge(this.options, options);
+    this.options = merge(this.options, options);
     const { username, password, apiUrl } = this.options;
     if (!username || !password || !apiUrl) {
       throw new Error("Missing login credentials.");
@@ -174,14 +174,14 @@ export default class MWBot {
           this.log(`Login failed with invalid response: ${loginString}`);
           throw new Error("Invalid response from API.");
         } else {
-          this.state = MWBot.merge(this.state, loginResponse.login);
+          this.state = merge(this.state, loginResponse.login);
           loginForm.lgtoken = loginResponse.login.token;
           return this.request<MWLoginResponse>(loginForm);
         }
       })
       .then((tokenResponse) => {
         if (tokenResponse.login?.result === "Success") {
-          this.state = MWBot.merge(this.state, tokenResponse.login);
+          this.state = merge(this.state, tokenResponse.login);
           this.loggedIn = true;
         } else {
           this.log(`Login failed: ${loginString}`);
@@ -305,7 +305,7 @@ export default class MWBot {
       file = await fs.readFile(file, null);
     }
     if (!title) throw new Error("No title provided for upload");
-    const form = MWBot.merge(
+    const form = merge(
         {
           action: "upload",
           filename: title,
@@ -319,7 +319,7 @@ export default class MWBot {
     for (const [name, value] of Object.entries(form)) {
       formData.append(name, value);
     }
-    const uploadOptions = MWBot.merge<RequestOptions>(
+    const uploadOptions = merge<RequestOptions>(
       this.requestOptions,
       customRequestOptions,
       {
@@ -342,7 +342,7 @@ export default class MWBot {
       title,
       file,
       comment,
-      MWBot.merge({ ignorewarnings: 1 }, formOptions),
+      merge({ ignorewarnings: 1 }, formOptions),
       customRequestOptions
     );
   }
@@ -451,8 +451,8 @@ export default class MWBot {
 
   prepareRequest(params: Object, customRequestOptions: RequestOptions) {
     if (!this.requestOptions.url) this.requestOptions.url = this.options.apiUrl;
-    let requestOptions = MWBot.merge(this.requestOptions, customRequestOptions);
-    requestOptions.form = MWBot.merge(requestOptions.form, params);
+    let requestOptions = merge(this.requestOptions, customRequestOptions);
+    requestOptions.form = merge(requestOptions.form, params);
     return requestOptions;
   }
 
@@ -493,8 +493,8 @@ export default class MWBot {
   get version(): string {
     return packageJson.version;
   }
+}
 
-  static merge<E>(...items: E[]): E {
-    return Object.assign({}, ...items);
-  }
+export function merge<E>(...items: E[]): E {
+  return Object.assign({}, ...items);
 }
