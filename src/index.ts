@@ -490,6 +490,46 @@ export default class MWBot {
     if (this.options.verbose) console.log(`[mwbot] ${log}`);
   }
 
+  askQuery(
+    query: string,
+    apiUrl?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    apiUrl = apiUrl ?? this.options.apiUrl;
+    const form: MWForm = {
+        action: "ask",
+        query,
+      },
+      requestOptions = merge(
+        {
+          url: apiUrl,
+          form,
+        },
+        customRequestOptions
+      );
+    return this.rawRequest(requestOptions);
+  }
+
+  sparqlQuery(
+    query: string,
+    apiUrl?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    apiUrl = apiUrl ?? this.options.apiUrl;
+    const form: MWForm = {
+        query,
+        format: "json",
+      },
+      requestOptions = merge(
+        {
+          url: apiUrl,
+          form,
+        },
+        customRequestOptions
+      );
+    return this.rawRequest(requestOptions);
+  }
+
   get version(): string {
     return packageJson.version;
   }
@@ -497,4 +537,8 @@ export default class MWBot {
 
 export function merge<E>(...items: E[]): E {
   return Object.assign({}, ...items);
+}
+
+export function getFirstValue(object: Object) {
+  return Object.values(object)[0];
 }
