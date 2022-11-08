@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import got from "got";
-import semver, { SemVer } from "semver";
+import semver from "semver";
 import {
   Counter,
   BotOptions,
