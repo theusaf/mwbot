@@ -20,7 +20,7 @@ export interface BotError extends Error {
 }
 export type MWVersion = SemVer;
 export interface MWForm {
-  action: string;
+  action?: string;
   [x: string]: any;
 }
 export interface MWLoginForm extends MWForm {

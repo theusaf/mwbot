@@ -12,10 +12,12 @@ import {
   MWLoginForm,
   MWQueryResponse,
   BotError,
+  MWForm,
 } from "./types.js";
 import { CookieJar } from "tough-cookie";
-import { dirname, join } from "node:path";
+import { dirname, join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
+import FormData from "form-data";
 
 const __dirname = dirname(fileURLToPath(import.meta.url)),
   packageJson = JSON.parse(
@@ -215,6 +217,224 @@ export default class MWBot {
     return this.getCreateAccountToken();
   }
 
+  async update(
+    title: string,
+    content: string,
+    summary?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    return this.request(
+      {
+        action: "edit",
+        title,
+        text: content,
+        summary: summary ?? this.options.defaultSummary,
+        token: await this.getEditToken(),
+        nocreate: true,
+        bot: true,
+      },
+      customRequestOptions
+    );
+  }
+
+  async updateFromID(
+    pageid: number,
+    content: string,
+    summary?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    return this.request(
+      {
+        action: "edit",
+        pageid,
+        text: content,
+        summary: summary ?? this.options.defaultSummary,
+        token: await this.getEditToken(),
+        nocreate: true,
+        bot: true,
+      },
+      customRequestOptions
+    );
+  }
+
+  async delete(
+    title: string,
+    reason?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    return this.request(
+      {
+        action: "delete",
+        title,
+        reason: reason ?? this.options.defaultSummary,
+        token: await this.getEditToken(),
+        bot: true,
+      },
+      customRequestOptions
+    );
+  }
+
+  async move(
+    oldTitle: string,
+    newTitle: string,
+    reason?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    return this.request(
+      {
+        action: "move",
+        from: oldTitle,
+        to: newTitle,
+        reason: reason ?? this.options.defaultSummary,
+        token: await this.getEditToken(),
+        bot: true,
+      },
+      customRequestOptions
+    );
+  }
+
+  async upload(
+    title: string,
+    file: string | Buffer,
+    comment: string = "",
+    formOptions?: MWForm,
+    customRequestOptions?: RequestOptions
+  ) {
+    if (typeof file === "string") {
+      if (!title) title = basename(file);
+      file = await fs.readFile(file, null);
+    }
+    if (!title) throw new Error("No title provided for upload");
+    const form = MWBot.merge(
+        {
+          action: "upload",
+          filename: title,
+          comment,
+          file,
+          token: await this.getEditToken(),
+        },
+        formOptions
+      ),
+      formData = new FormData();
+    for (const [name, value] of Object.entries(form)) {
+      formData.append(name, value);
+    }
+    const uploadOptions = MWBot.merge<RequestOptions>(
+      this.requestOptions,
+      customRequestOptions,
+      {
+        method: "POST",
+        body: formData,
+        form: null,
+      }
+    );
+    return this.request({}, uploadOptions);
+  }
+
+  uploadOverwrite(
+    title: string,
+    file: string | Buffer,
+    comment?: string,
+    formOptions?: MWForm,
+    customRequestOptions?: RequestOptions
+  ) {
+    return this.upload(
+      title,
+      file,
+      comment,
+      MWBot.merge({ ignorewarnings: 1 }, formOptions),
+      customRequestOptions
+    );
+  }
+
+  async edit(
+    title: string,
+    content: string,
+    summary?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    return this.request(
+      {
+        action: "edit",
+        title,
+        text: content,
+        summary: summary ?? this.options.defaultSummary,
+        token: await this.getEditToken(),
+        bot: true,
+      },
+      customRequestOptions
+    );
+  }
+
+  async create(
+    title: string,
+    content: string,
+    summary?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    const editForm: MWForm = {
+      action: "edit",
+      title,
+      text: content,
+      token: await this.getEditToken(),
+      summary: summary ?? this.options.defaultSummary,
+      createonly: true,
+      bot: true,
+    };
+    return this.request(editForm, customRequestOptions);
+  }
+
+  read(title: string, redirect = true, customRequestOptions?: RequestOptions) {
+    return this.readWithProps(title, "content", redirect, customRequestOptions);
+  }
+
+  readWithProps(
+    title: string,
+    props: string,
+    redirect = true,
+    customRequestOptions?: RequestOptions
+  ) {
+    const form: MWForm = {
+      action: "query",
+      prop: "revisions",
+      rvprop: props,
+      titles: title,
+    };
+    if (semver.gte(this.mwVersion, "1.32.0")) form.rvslots = "main";
+    if (redirect) form.redirects = "true";
+    return this.request<MWQueryResponse>(form, customRequestOptions);
+  }
+
+  readFromID(
+    pageid: string,
+    redirect = true,
+    customRequestOptions?: RequestOptions
+  ) {
+    return this.readWithPropsFromID(
+      pageid,
+      "content",
+      redirect,
+      customRequestOptions
+    );
+  }
+
+  readWithPropsFromID(
+    pageid: string,
+    props: string,
+    redirect = true,
+    customRequestOptions?: RequestOptions
+  ) {
+    const form: MWForm = {
+      action: "query",
+      prop: "revisions",
+      rvprop: props,
+      pageids: pageid,
+    };
+    if (semver.gte(this.mwVersion, "1.32.0")) form.rvslots = "main";
+    if (redirect) form.redirects = "true";
+    return this.request<MWQueryResponse>(form, customRequestOptions);
+  }
+
   request<E>(params: Object, customRequestOptions: RequestOptions = {}) {
     return this.requestJSON<E>(params, customRequestOptions);
   }
@@ -274,10 +494,7 @@ export default class MWBot {
     return packageJson.version;
   }
 
-  static merge<E>(a: E, b: E): E {
-    return {
-      ...a,
-      ...b,
-    };
+  static merge<E>(...items: E[]): E {
+    return Object.assign({}, ...items);
   }
 }
