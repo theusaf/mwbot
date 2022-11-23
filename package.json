@@ -4,6 +4,7 @@
   "description": "A simple, flexible MediaWiki Bot",
   "main": "build/index.js",
   "type": "module",
+  "types": "src/index.d.ts",
   "directories": {
     "test": "test"
   },
