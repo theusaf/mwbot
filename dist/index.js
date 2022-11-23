@@ -210,6 +210,16 @@ export default class MWBot {
             bot: true,
         }, customRequestOptions);
     }
+    async protect(title, reason, customRequestOptions) {
+        return this.request({
+            action: "protect",
+            title,
+            protections: "edit=sysop",
+            expiry: "infinite",
+            reason: reason ?? this.options.defaultSummary,
+            token: await this.getEditToken(),
+        }, customRequestOptions);
+    }
     async move(oldTitle, newTitle, reason, customRequestOptions) {
         return this.request({
             action: "move",
@@ -316,7 +326,7 @@ export default class MWBot {
     prepareRequest(params, customRequestOptions) {
         if (!this.requestOptions.url)
             this.requestOptions.url = this.options.apiUrl;
-        let requestOptions = merge(this.requestOptions, customRequestOptions);
+        const requestOptions = merge(this.requestOptions, customRequestOptions);
         requestOptions.form = merge(requestOptions.form, params);
         return requestOptions;
     }
