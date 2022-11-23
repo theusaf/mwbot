@@ -10,7 +10,7 @@
     "target": "ESNext",
     "allowSyntheticDefaultImports": true,
     "typeRoots": [],
-    "types": ["node"],
+    "types": [],
     "skipLibCheck": true
   },
   "include": ["src"],

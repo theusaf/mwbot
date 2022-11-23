@@ -12,6 +12,10 @@
     "node": ">=10.0.0"
   },
   "dependencies": {
+    "@types/semver": "^7.3.13",
+    "@types/tough-cookie": "^4.0.2",
+    "@types/got": "^9.6.12",
+    "@types/node": "^18.11.9",
     "form-data": "^4.0.0",
     "got": "^12.5.3",
     "semver": "^7.3.8",
@@ -57,10 +61,6 @@
   },
   "homepage": "https://github.com/theusaf/mwbot#readme",
   "devDependencies": {
-    "@types/got": "^9.6.12",
-    "@types/node": "^18.11.9",
-    "@types/semver": "^7.3.13",
-    "@types/tough-cookie": "^4.0.2",
     "@typescript-eslint/eslint-plugin": "^5.44.0",
     "@typescript-eslint/parser": "^5.44.0",
     "eslint": "^8.28.0",
