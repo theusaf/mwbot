@@ -278,15 +278,22 @@ export default class MWBot {
     );
   }
 
-  async protect(title: string, reason?: string, customRequestOptions?: RequestOptions) {
-    return this.request({
-      action: "protect",
-      title,
-      protections: "edit=sysop",
-      expiry: "infinite",
-      reason: reason ?? this.options.defaultSummary,
-      token: await this.getEditToken(),
-    }, customRequestOptions);
+  async protect(
+    title: string,
+    reason?: string,
+    customRequestOptions?: RequestOptions
+  ) {
+    return this.request(
+      {
+        action: "protect",
+        title,
+        protections: "edit=sysop",
+        expiry: "infinite",
+        reason: reason ?? this.options.defaultSummary,
+        token: await this.getEditToken(),
+      },
+      customRequestOptions
+    );
   }
 
   async move(
