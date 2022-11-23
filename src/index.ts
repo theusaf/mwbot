@@ -34,7 +34,7 @@ export default class MWBot {
   options: BotOptions;
   requestOptions: RequestOptions;
 
-  constructor(options: BotOptions, requestOptions: RequestOptions) {
+  constructor(options: BotOptions, requestOptions: RequestOptions = {}) {
     this.state = {};
     this.loggedIn = false;
     this.editToken = null;
@@ -62,6 +62,9 @@ export default class MWBot {
       },
       resolveBodyOnly: false,
       form: {},
+      searchParams: {
+        format: "json",
+      },
       timeout: {
         request: 120000,
       },
@@ -100,6 +103,7 @@ export default class MWBot {
       siprop: "general",
     });
     if (response.query?.general) {
+      this.state = merge(this.state, response.query.general);
       return this.state;
     } else {
       throw new Error("Could not get siteinfo");
@@ -296,7 +300,7 @@ export default class MWBot {
   async upload(
     title: string,
     file: string | Buffer,
-    comment: string = "",
+    comment = "",
     formOptions?: MWForm,
     customRequestOptions?: RequestOptions
   ) {
@@ -435,28 +439,28 @@ export default class MWBot {
     return this.request<MWQueryResponse>(form, customRequestOptions);
   }
 
-  request<E>(params: Object, customRequestOptions: RequestOptions = {}) {
+  request<E>(params: any, customRequestOptions: RequestOptions = {}) {
     return this.requestJSON<E>(params, customRequestOptions);
   }
 
-  requestJSON<E>(params: Object, customRequestOptions: RequestOptions = {}) {
+  requestJSON<E>(params: any, customRequestOptions: RequestOptions = {}) {
     const requestOptions = this.prepareRequest(params, customRequestOptions);
     return this.rawRequestJSON<E>(requestOptions);
   }
 
-  requestText(params: Object, customRequestOptions: RequestOptions = {}) {
+  requestText(params: any, customRequestOptions: RequestOptions = {}) {
     const requestOptions = this.prepareRequest(params, customRequestOptions);
     return this.rawRequestText(requestOptions);
   }
 
-  prepareRequest(params: Object, customRequestOptions: RequestOptions) {
+  prepareRequest(params: any, customRequestOptions: RequestOptions) {
     if (!this.requestOptions.url) this.requestOptions.url = this.options.apiUrl;
-    let requestOptions = merge(this.requestOptions, customRequestOptions);
+    const requestOptions = merge(this.requestOptions, customRequestOptions);
     requestOptions.form = merge(requestOptions.form, params);
     return requestOptions;
   }
 
-  async rawRequestJSON<E = Object>(requestOptions: RequestOptions): Promise<E> {
+  async rawRequestJSON<E>(requestOptions: RequestOptions): Promise<E> {
     this.counter.total++;
     this.counter.resolved++;
     try {
@@ -539,6 +543,6 @@ export function merge<E>(...items: E[]): E {
   return Object.assign({}, ...items);
 }
 
-export function getFirstValue(object: Object) {
+export function getFirstValue(object: any) {
   return Object.values(object)[0];
 }

@@ -15,7 +15,7 @@ export default class MWBot {
     counter;
     options;
     requestOptions;
-    constructor(options, requestOptions) {
+    constructor(options, requestOptions = {}) {
         this.state = {};
         this.loggedIn = false;
         this.editToken = null;
@@ -42,6 +42,9 @@ export default class MWBot {
             },
             resolveBodyOnly: false,
             form: {},
+            searchParams: {
+                format: "json",
+            },
             timeout: {
                 request: 120000,
             },
@@ -66,6 +69,7 @@ export default class MWBot {
             siprop: "general",
         });
         if (response.query?.general) {
+            this.state = merge(this.state, response.query.general);
             return this.state;
         }
         else {
