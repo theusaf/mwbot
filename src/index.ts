@@ -332,7 +332,6 @@ export default class MWBot {
           action: "upload",
           filename: title,
           comment,
-          file,
           token: await this.getEditToken(),
         },
         formOptions
@@ -341,6 +340,7 @@ export default class MWBot {
     for (const [name, value] of Object.entries(form)) {
       formData.append(name, value);
     }
+    formData.append("file", file, { filename: title });
     const uploadOptions = merge<RequestOptions>(
       this.requestOptions,
       customRequestOptions,
@@ -505,6 +505,7 @@ export default class MWBot {
   }
 
   rawRequest(requestOptions: RequestOptions): GotRequest {
+    if (requestOptions.body) delete requestOptions.form;
     return got(requestOptions) as GotRequest;
   }
 
