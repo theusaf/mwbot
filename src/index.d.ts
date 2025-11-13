@@ -1,5 +1,5 @@
 import { OptionsInit } from "got";
-import {
+import type {
   BotOptions,
   BotState,
   MWVersion,
